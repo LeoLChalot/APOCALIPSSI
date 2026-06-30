@@ -42,14 +42,16 @@ services:
       - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
+    dns:
+      - 8.8.8.8
     # Sur GPU NVIDIA, décommenter pour accélérer :
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   backend:
     build:
