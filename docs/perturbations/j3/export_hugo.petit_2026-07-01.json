@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "export_format": "JSON",
+    "export_date": "2026-07-01T13:57:51.194667+00:00",
+    "rgpd_articles": [
+      "Art. 15 — Droit d'accès",
+      "Art. 20 — Portabilité"
+    ]
+  },
+  "user": {
+    "id": 4,
+    "username": "hugo.petit@test.local",
+    "email": "hugo.petit@test.local",
+    "first_name": "Hugo",
+    "last_name": "Petit",
+    "date_joined": "2026-07-01T09:25:08.283089+00:00",
+    "last_login": "2026-07-01T13:56:58.542731+00:00",
+    "email_verified": false
+  },
+  "quizzes": [
+    {
+      "id": 4,
+      "title": "Droit du numérique — RGPD (révision)",
+      "source_text": "Le RGPD encadre le traitement des données personnelles : licéité, consentement, droits des personnes (accès, rectification, effacement, portabilité), et responsabilité du responsable de traitement.",
+      "score": 8,
+      "created_at": "2026-07-01T09:25:08.382214+00:00",
+      "updated_at": "2026-07-01T09:25:08.382220+00:00",
+      "questions": [
+        {
+          "index": 1,
+          "prompt": "Que signifie le sigle RGPD ?",
+          "options": [
+            "Règlement Général sur la Protection des Données",
+            "Régime Général de Procédure Documentaire",
+            "Référentiel Global de Protection Digitale",
+            "Règlement Genéral des Pratiques Données"
+          ],
+          "correct_index": 0,
+          "selected_index": 0
+        },
+        {
+          "index": 2,
+          "prompt": "Quel droit permet à une personne de récupérer ses données dans un format réutilisable ?",
+          "options": [
+            "Droit d'accès",
+            "Droit à la portabilité",
+            "Droit d'opposition",
+            "Droit de rectification"
+          ],
+          "correct_index": 1,
+          "selected_index": 1
+        },
+        {
+          "index": 3,
+          "prompt": "Sur quelle base un traitement peut-il être licite ?",
+          "options": [
+            "Le consentement de la personne",
+            "La seule volonté de l'entreprise",
+            "Un gain commercial",
+            "Une habitude du secteur"
+          ],
+          "correct_index": 0,
+          "selected_index": 0
+        },
+        {
+          "index": 4,
+          "prompt": "Le délai de réponse à une demande d'accès (article 15) est en principe de :",
+          "options": [
+            "48 heures",
+            "1 mois",
+            "1 an",
+            "Aucun délai"
+          ],
+          "correct_index": 1,
+          "selected_index": 3
+        }
+      ]
+    }
+  ]
+}
