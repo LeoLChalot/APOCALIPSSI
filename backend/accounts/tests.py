@@ -170,3 +170,62 @@ def test_gdpr_erase_deletes_all_data(auth_client, user):
     assert response.status_code == 204
     assert not User.objects.filter(pk=user.pk).exists()
     assert Quiz.objects.filter(user=user).count() == 0
+
+
+# ---------------------------------------------------------------------------
+# RGPD — Audit trail des demandes (modèle DataRequest)
+# ---------------------------------------------------------------------------
+
+
+def test_export_creates_audit_trail(auth_client, user):
+    """Un export doit laisser une trace DataRequest (type export, répondue)."""
+    from accounts.models import DataRequest
+
+    auth_client.get("/api/accounts/gdpr/export/")
+
+    req = DataRequest.objects.get(user=user, request_type=DataRequest.RequestType.EXPORT)
+    assert req.status == DataRequest.Status.ANSWERED
+    assert req.user_email == "alice@test.com"
+    assert req.answered_at is not None
+    # L'empreinte SHA-256 est un hex de 64 caractères.
+    assert len(req.export_hash) == 64
+
+
+def test_each_export_is_independently_traced(auth_client, user):
+    """Chaque export laisse SA propre trace (le fichier remis est horodaté, donc
+    distinct à chaque fois) : deux exports => deux DataRequest, deux empreintes."""
+    from accounts.models import DataRequest
+
+    auth_client.get("/api/accounts/gdpr/export/")
+    auth_client.get("/api/accounts/gdpr/export/")
+
+    hashes = list(
+        DataRequest.objects.filter(
+            user=user, request_type=DataRequest.RequestType.EXPORT
+        ).values_list("export_hash", flat=True)
+    )
+    assert len(hashes) == 2
+    # Chaque empreinte est un SHA-256 valide (64 caractères hexadécimaux).
+    assert all(len(h) == 64 for h in hashes)
+
+
+def test_erase_creates_surviving_audit_trail(auth_client, user):
+    """Un effacement laisse une trace qui SURVIT à la suppression du compte.
+
+    La FK `user` passe à NULL (on_delete=SET_NULL) mais la ligne reste,
+    identifiée par `user_email` — c'est la preuve de conformité Art. 17.
+    """
+    from accounts.models import DataRequest
+
+    auth_client.delete(
+        "/api/accounts/gdpr/erase/",
+        {"password": "motdepasse123"},
+        format="json",
+    )
+
+    assert not User.objects.filter(pk=user.pk).exists()
+    req = DataRequest.objects.get(request_type=DataRequest.RequestType.ERASE)
+    assert req.user is None  # FK vidée par SET_NULL
+    assert req.user_email == "alice@test.com"  # mais l'identité est conservée
+    assert req.status == DataRequest.Status.ANSWERED
+    assert req.export_hash == ""  # aucun fichier remis lors d'un effacement

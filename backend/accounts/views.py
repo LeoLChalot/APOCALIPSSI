@@ -11,6 +11,8 @@ Endpoints d'authentification (Lot 3 : email-identifiant + validation + reset).
     POST /api/accounts/password-reset/confirm/   — définir le nouveau mot de passe
 """
 
+import hashlib
+import json
 import logging
 
 from django.contrib.auth import login as django_login
@@ -24,7 +26,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .emails import EmailError, send_password_reset_email, send_verification_email
-from .models import get_or_create_profile
+from .models import DataRequest, get_or_create_profile
 from .serializers import (
     ChangePasswordSerializer,
     DeleteAccountSerializer,
@@ -370,6 +372,22 @@ class GDPRExportView(APIView):
             "quizzes": quizzes_data,
         }
 
+        # Audit trail RGPD — on journalise la demande d'export (preuve de
+        # conformité). L'empreinte SHA-256 est calculée sur une sérialisation
+        # déterministe (sort_keys) du JSON exporté : elle prouve QUEL contenu a
+        # été remis, sans re-stocker les données personnelles elles-mêmes.
+        export_bytes = json.dumps(export, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        export_hash = hashlib.sha256(export_bytes).hexdigest()
+
+        DataRequest.objects.create(
+            user=user,
+            user_email=user.email,
+            request_type=DataRequest.RequestType.EXPORT,
+            status=DataRequest.Status.ANSWERED,
+            answered_at=__import__("django").utils.timezone.now(),
+            export_hash=export_hash,
+        )
+
         return Response(export)
 
 
@@ -395,9 +413,21 @@ class GDPREraseView(APIView):
         user_email = user.email
         logger.info("RGPD Art.17 — Effacement demandé par %s", user_email)
 
+        # Audit trail RGPD — on journalise l'effacement AVANT de supprimer le
+        # compte. La FK `user` passera automatiquement à NULL (on_delete=SET_NULL)
+        # quand `user.delete()` s'exécutera : la trace survit, identifiée par
+        # `user_email`. Pas d'export_hash ici (aucun fichier n'est remis).
+        DataRequest.objects.create(
+            user=user,
+            user_email=user_email,
+            request_type=DataRequest.RequestType.ERASE,
+            status=DataRequest.Status.ANSWERED,
+            answered_at=__import__("django").utils.timezone.now(),
+        )
+
         Token.objects.filter(user=user).delete()
         django_logout(request)
-        user.delete()  # CASCADE supprime Profile + Quiz + Questions
+        user.delete()  # CASCADE supprime Profile + Quiz + Questions ; SET_NULL sur DataRequest
 
         logger.info("RGPD Art.17 — Données effacées pour %s", user_email)
         return Response(
